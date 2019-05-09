@@ -3,34 +3,36 @@ package com.example.own7;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
+
+import androidx.core.content.PermissionChecker;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.RuntimePermissions;
 
+@RuntimePermissions
 public class MainActivity extends Activity {
     private List<Media_Play> playList;
     AlertDialog.Builder builder;
     AlertDialog ad;
     ListView listview;
+    Cursor c;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         listview = new ListView(this);    //搜索手机中的视频文件
-        Cursor c  = this.getContentResolver()
-                .query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                        new String[]{MediaStore.Video.Media.TITLE,
-                                MediaStore.Video.Media.DURATION,
-                                MediaStore.Video.Media._ID,
-                                MediaStore.Video.Media.DISPLAY_NAME ,
-                                MediaStore.Video.Media.DATA},
-                        null, null, null);
+        Video_Cursor();
         if (c==null || c.getCount()==0)     //如果没有搜索到视频，显示存储列表为空...
         {
             builder = new AlertDialog.Builder(this);
@@ -54,6 +56,30 @@ public class MainActivity extends Activity {
             PlayAdapter adapter = new PlayAdapter(MainActivity.this,R.layout.media_play,playList);
             listview = findViewById(R.id.List_View);
             listview.setAdapter(adapter);
+            listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Intent intent = new Intent(MainActivity.this,Video_Player.class);
+                    //用bundle携带数据
+                    Bundle bundle = new Bundle();
+                    bundle.putString("path",playList.get(position).getPath());
+                    intent.putExtras(bundle);
+
+                    startActivity(intent);
+                }
+            });
         }
+   }
+    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+    public void Video_Cursor()
+    {
+        c  = this.getContentResolver()
+                .query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                        new String[]{MediaStore.Video.Media.TITLE,
+                                MediaStore.Video.Media.DURATION,
+                                MediaStore.Video.Media._ID,
+                                MediaStore.Video.Media.DISPLAY_NAME ,
+                                MediaStore.Video.Media.DATA},
+                        null, null, null);
     }
 }
